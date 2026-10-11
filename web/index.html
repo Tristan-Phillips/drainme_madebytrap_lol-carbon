@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#07040d">
+<meta name="description" content="1 XNO sits in a public vault. Every click takes 1 raw. There are 10^30 raw. Go on, try to empty it.">
+<title>drainme | try to empty 1 XNO</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,4 90,27 90,73 50,96 10,73 10,27' fill='%2307040d' stroke='%23ff2e93' stroke-width='8'/%3E%3Ccircle cx='50' cy='50' r='16' fill='%2319e6ff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+<!-- main.js imports these; listing them lets the browser fetch all six at once instead of in two rounds -->
+<link rel="modulepreload" href="js/nanoaddr.js">
+<link rel="modulepreload" href="js/digits.js">
+<link rel="modulepreload" href="js/orb.js">
+<link rel="modulepreload" href="js/feed.js">
+<link rel="modulepreload" href="js/source.js">
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+
+<div class="fold">
+  <header class="top">
+    <a class="wordmark" href="#content" aria-label="drainme, top of page">drain<span>me</span></a>
+    <nav aria-label="Page sections">
+      <ul>
+        <li><a href="#leaders">most taken</a></li>
+        <li><a href="#limits">honest limits</a></li>
+        <li><a href="#bot">bring your own bot</a></li>
+      </ul>
+    </nav>
+    <p class="conn" id="conn" data-state="connecting"><span class="conn__shape" aria-hidden="true"></span><span id="conn-text">connecting</span></p>
+  </header>
+
+  <p class="banner banner--demo" id="demo-banner" hidden>demo data. Nothing here is connected to a real vault.</p>
+  <p class="banner banner--notice" id="notice-banner" role="status" hidden><strong>bots are being checked for a bit.</strong> A crowd showed up, so Cloudflare is asking browsers to prove themselves. Humans can keep clicking; curl gets back in soon.</p>
+  <p class="banner banner--halt" id="halt-banner" role="alert" hidden><strong>payouts paused, funds intact.</strong> Something unexpected happened and the payout worker stopped itself. Clicking still counts.</p>
+
+  <main id="content" tabindex="-1" class="stage">
+
+    <section class="center" aria-labelledby="h1">
+      <div class="hero">
+        <svg class="doodle doodle--spiral" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          <path d="M60 62c3-5 10-4 11 2s-6 12-14 10-14-10-12-19 13-17 24-14 19 15 16 27-17 22-30 20-24-14-23-29" />
+        </svg>
+        <svg class="doodle doodle--bolt" viewBox="0 0 60 100" aria-hidden="true" focusable="false">
+          <path d="M38 4 8 54h20L18 96 54 40H34z" />
+        </svg>
+        <svg class="doodle doodle--tally" viewBox="0 0 90 50" aria-hidden="true" focusable="false">
+          <path d="M8 6 12 44M24 5 26 45M40 7 42 44M56 6 58 46M2 38 70 12" />
+        </svg>
+        <p class="eyebrow">1 XNO &middot; 10<sup>30</sup> raw &middot; no rules</p>
+        <h1 id="h1">go on. <em>try</em> to empty&nbsp;me.</h1>
+        <p class="hero__claim">The vault cannot be drained by clicking.</p>
+      </div>
+
+      <section class="vault" aria-labelledby="vault-h">
+        <svg class="drips" viewBox="0 0 120 64" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="paint" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ff2e93" />
+              <stop offset="1" stop-color="#ff6db3" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#paint)" d="M0 0h120v4c-7 0-9 3-10 8-1 6-1 16-5 16s-4-11-5-16c-1-5-4-8-10-8-5 0-7 4-8 10-1 8 0 38-6 38s-5-30-6-38c-1-6-4-10-10-10-5 0-7 4-8 9-1 5 0 14-4 14s-4-9-5-14c-1-6-5-9-13-9H0z" />
+          <ellipse cx="66" cy="44" rx="1.6" ry="3.2" fill="#ffe1f1" opacity=".75" />
+          <ellipse cx="103" cy="22" rx="1.2" ry="2.4" fill="#ffe1f1" opacity=".7" />
+        </svg>
+        <div class="vault__head">
+          <h2 id="vault-h">the reserve</h2>
+          <fieldset class="units">
+            <legend class="visually-hidden">Display unit</legend>
+            <label><input type="radio" name="unit" value="raw" checked><span>raw</span></label>
+            <label><input type="radio" name="unit" value="xno"><span>XNO</span></label>
+          </fieldset>
+        </div>
+        <p class="vault__digits" id="vault-digits" role="img" aria-label="The reserve is loading"></p>
+        <p class="vault__note">Interpolated between snapshots, corrected every second.<br><span id="chain-line">On-chain, confirmed: <span class="mono" id="chain-val">&hellip;</span></span><a class="proof" id="proof-link" href="https://blocklattice.io/" target="_blank" rel="noopener noreferrer" hidden>check the vault yourself</a></p>
+      </section>
+
+      <section class="play" aria-label="Take some">
+        <div class="orb-wrap">
+          <svg class="doodle doodle--lips" viewBox="0 0 60 32" aria-hidden="true" focusable="false">
+            <path d="M3 15C10 6 18 4 24 9c3-3 9-3 12 0 6-5 14-3 21 6M3 15c9 14 45 14 54 0M9 15c13 3 29 3 42 0" />
+          </svg>
+          <button type="button" class="orb" id="orb" aria-disabled="true" aria-describedby="orb-help">
+            <svg class="orb__hex" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+              <polygon class="hx hx--a" points="100,6 181.5,53 181.5,147 100,194 18.5,147 18.5,53" />
+              <polygon class="hx hx--b" points="100,22 167.6,61 167.6,139 100,178 32.4,139 32.4,61" />
+              <circle class="hx hx--c" cx="100" cy="100" r="64" />
+            </svg>
+            <span class="orb__core" aria-hidden="true"></span>
+            <span class="orb__label" id="orb-label">address?</span>
+          </button>
+          <p class="orb__help" id="orb-help">Paste your nano_ address below to light me up.</p>
+        </div>
+
+        <form class="addr" id="addr-form" novalidate>
+          <label for="addr-input">where should I send what you take?</label>
+          <div class="addr__row">
+            <input id="addr-input" class="mono" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="80" placeholder="nano_1…" aria-describedby="addr-hint addr-msg">
+            <button type="submit" class="btn" id="addr-save">keep it</button>
+          </div>
+          <p class="hint" id="addr-hint">Stays in this browser. The server keeps your address and balance, nothing else about you.</p>
+          <p class="hint" id="addr-wallet">No wallet? <a href="https://www.berrywallet.org/" target="_blank" rel="noopener noreferrer">Berry Wallet</a> is one free option. Not sponsored, no referral.</p>
+          <p class="msg" id="addr-msg" role="status"></p>
+          <p class="addr__saved" id="addr-saved" hidden>
+            <span>paying out to <span class="mono" id="addr-short"></span></span>
+            <button type="button" class="btn btn--ghost btn--small" id="addr-change">change</button>
+          </p>
+        </form>
+
+        <div class="mine">
+          <p><span class="mine__n mono" id="mine-n">0</span> <span>raw taken, not yet sent</span></p>
+          <button type="button" class="btn btn--ghost btn--small" id="cashout" aria-disabled="true">send me what I've taken</button>
+        </div>
+        <p class="msg msg--wide" id="play-msg" role="status"></p>
+      </section>
+    </section>
+
+    <section class="wire" aria-labelledby="wire-h">
+      <div class="panel__head">
+        <h2 id="wire-h">the wire</h2>
+        <button type="button" class="btn btn--ghost btn--small" id="wire-pause" aria-pressed="false">pause</button>
+      </div>
+      <p class="sub">sampled, about 10 lines a second at most, addresses truncated</p>
+      <div class="term" id="wire-log" tabindex="0" role="log" aria-live="off" aria-label="Sampled click feed. Not announced automatically."></div>
+    </section>
+
+    <div class="side">
+      <section class="stats" aria-labelledby="stats-h">
+        <h2 id="stats-h" class="visually-hidden">Live numbers</h2>
+        <dl>
+          <div><dt>taken so far</dt><dd class="mono" id="st-clicks">&hellip;</dd></div>
+          <div><dt>right now</dt><dd class="mono"><span id="st-rate">&hellip;</span> <small>clicks/s</small></dd></div>
+          <div><dt>here now</dt><dd class="mono"><span id="st-here">&hellip;</span> <small>watching</small></dd></div>
+          <div class="stats__wide"><dt>to empty me</dt><dd id="st-drain">waiting for the first snapshot.</dd></div>
+          <div class="stats__wide stats__budget" id="st-budget-row" hidden><dt>my budget, not Nano's</dt><dd class="mono" id="st-budget"></dd></div>
+        </dl>
+        <p class="formula mono">years = remaining raw &divide; clicks/s &divide; 31,557,600</p>
+      </section>
+
+      <section class="payouts" aria-labelledby="pay-h">
+        <h2 id="pay-h">what's left me</h2>
+        <p class="sub"><span class="pay-why">exact raw and block hash. An explorer would round a small payout to zero.</span><span id="pay-age" hidden> Last one <span id="pay-age-n"></span> ago.</span></p>
+        <ul class="paylist" id="paylist"><li class="empty">nothing yet. Someone has to ask first.</li></ul>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="below">
+  <section class="limits leaders" id="leaders" aria-labelledby="leaders-h">
+    <h2 id="leaders-h">most taken</h2>
+    <p class="sub">exact raw paid out, all time, addresses truncated. Every one of these is on the chain.</p>
+    <ol class="board mono" id="board"><li class="empty">nobody has been paid yet.</li></ol>
+  </section>
+
+  <section class="limits" id="limits" aria-labelledby="limits-h">
+    <h2 id="limits-h">honest limits</h2>
+    <p class="claim">The vault cannot be drained by clicking.</p>
+    <p class="plain">That is the whole claim. Each touch takes one raw, the smallest piece of Nano, and there are a nonillion of them: at a billion clicks a second, about 3 &times; 10<sup>13</sup> years. The universe is about 1.4 &times; 10<sup>10</sup>. What I am not claiming:</p>
+    <ul class="plain">
+      <li><strong>Not that it can't be drained.</strong> A bug (a double-withdraw race, an overflow, a leaked seed) could do it. Arithmetic does nothing about bugs.</li>
+      <li><strong>Not that it can't go offline.</strong> If it does, this page says <em>availability lost, funds intact</em>.</li>
+      <li><strong>Not that it's bot-proof.</strong> There is nothing to prove there. Bots are welcome.</li>
+      <li><strong>Not that you have to come back.</strong> A balance left alone long enough is sent to its address by itself, only when nobody is waiting, which frees its place for someone new.</li>
+      <li><strong>Not that every address gets in.</strong> Each address I owe costs disk, so I keep at most 30 million. When that is full, a new address gets a 503 until someone cashes out; an address I already owe keeps counting.</li>
+      <li><strong>Not that payouts are instant.</strong> One worker sends one block at a time, first come first served, and an address already waiting merges new withdrawals into its place. When the line is full, withdrawing answers 503 and your balance stays credited. Every block stays on the chain forever: the price of real payouts.</li>
+    </ul>
+    <p class="plain">Withdrawals only go to the address that earned them. There is no field to send anywhere else.</p>
+  </section>
+
+  <section class="limits budget" id="budget" aria-labelledby="budget-h">
+    <h2 id="budget-h">what's Nano, and what's my budget</h2>
+    <p class="plain">Nano is fast and free: a payment confirms in under a second, with no fee. Anything slow here is me, not Nano.</p>
+    <ul>
+      <li><strong>A small box.</strong> Half a CPU core and a few hundred megabytes on one server<span id="budget-live"></span>. Under a crowd, the box is the bottleneck.</li>
+      <li><strong>Borrowed proof of work.</strong> Each payout needs some, borrowed from free public servers, or my own slow CPU if they all fail. When they are busy, your payout waits.</li>
+      <li><strong>One account, one line.</strong> One account's blocks go one after another, so payouts queue.</li>
+    </ul>
+    <p class="plain">1&nbsp;XNO really is 10<sup>30</sup> raw, and every one can move: a payout of 171&nbsp;raw is as real as a million.</p>
+  </section>
+
+  <section class="bot" id="bot" aria-labelledby="bot-h">
+    <h2 id="bot-h">bring your own bot</h2>
+    <p class="plain"><span class="mono">curl</span> is an official client. There is no captcha and no per-IP limit. A click carries no amount; I decide it is 1 raw.</p>
+    <figure>
+      <figcaption>one click</figcaption>
+      <pre class="mono"><code id="cmd-click">curl -X POST https://drainme.madebytrap.lol/click/nano_YOUR_ADDRESS</code></pre>
+      <button type="button" class="btn btn--small" data-copy="cmd-click">copy</button>
+    </figure>
+    <figure>
+      <figcaption>until you get bored</figcaption>
+      <pre class="mono"><code id="cmd-loop">while true; do curl -s -o /dev/null -X POST https://drainme.madebytrap.lol/click/nano_YOUR_ADDRESS; done</code></pre>
+      <button type="button" class="btn btn--small" data-copy="cmd-loop">copy</button>
+    </figure>
+    <figure>
+      <figcaption>cash out</figcaption>
+      <pre class="mono"><code id="cmd-withdraw">curl -X POST https://drainme.madebytrap.lol/withdraw/nano_YOUR_ADDRESS</code></pre>
+      <button type="button" class="btn btn--small" data-copy="cmd-withdraw">copy</button>
+    </figure>
+    <p class="msg" id="copy-msg" role="status"></p>
+  </section>
+
+  <footer class="foot">
+    <p>This server sets no cookies, runs no analytics and keeps no IP addresses. The only things it stores about you are your payout address, your balance and your payout records, and payouts are public on-chain anyway. Cloudflare carries the traffic to this server and sees your IP address, as any network edge does.</p>
+    <p class="mono">drainme.madebytrap.lol · <a href="https://github.com/Tristan-Phillips/drainme_madebytrap_lol-carbon" target="_blank" rel="noopener noreferrer">source</a> (AGPL-3.0)</p>
+  </footer>
+</div>
+
+<p class="visually-hidden" id="sr-summary" role="status"></p>
+<noscript><p class="banner">This exhibit is live numbers, so it needs JavaScript. The <a href="#bot">curl examples</a> work without it.</p></noscript>
+</body>
+</html>

@@ -1,0 +1,148 @@
+# Explicit project name: never rely on the directory name for compose identity (2026-07-17 outage rule, D55).
+name: drainme
+
+# The hardening every service shares: non-root, read-only root filesystem, no capabilities, no privilege
+# escalation, bounded logs, restart on failure.
+x-baseline: &baseline
+  read_only: true
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+# serve's RPC and work endpoints are also the egress proxy's whole allow-list, so the two cannot disagree (D93)
+x-endpoints: &endpoints
+  DRAINME_RPC_URLS: ${DRAINME_RPC_URLS:-}
+  DRAINME_WORK_URLS: ${DRAINME_WORK_URLS:-}
+
+services:
+  app:
+    <<: *baseline
+    build: .
+    image: drainme:v0.1.0
+    container_name: drainme-app
+    command: ["serve"]
+    user: "65532:65532"
+    environment:
+      <<: *endpoints
+      DRAINME_DATA_DIR: /data
+      DRAINME_SEED_FILE: /run/secrets/drainme_seed
+      DRAINME_SEND_THRESHOLD: ${DRAINME_SEND_THRESHOLD:-}
+      DRAINME_RECEIVE_THRESHOLD: ${DRAINME_RECEIVE_THRESHOLD:-}
+      DRAINME_REPRESENTATIVE: ${DRAINME_REPRESENTATIVE:-}
+      DRAINME_RPC_TIMEOUT: ${DRAINME_RPC_TIMEOUT:-}
+      DRAINME_QUEUE_MAX: ${DRAINME_QUEUE_MAX:-}
+      DRAINME_ADDRESS_MAX: ${DRAINME_ADDRESS_MAX:-}
+      DRAINME_SSE_MAX: ${DRAINME_SSE_MAX:-}
+      DRAINME_IDLE_AFTER: ${DRAINME_IDLE_AFTER:-}
+      DRAINME_WORK_TIMEOUT: ${DRAINME_WORK_TIMEOUT:-}
+      DRAINME_SEND_THRESHOLD_MAX: ${DRAINME_SEND_THRESHOLD_MAX:-}
+      # the only way out (D93): this network has no route to the internet
+      HTTPS_PROXY: http://drainme-egress:3128
+      # the Go runtime collects harder near this, well before the container limit would kill it (D53)
+      GOMEMLIMIT: ${DRAINME_GOMEMLIMIT:-450MiB}
+    # D26: the seed is a read-only file, never an environment variable
+    secrets: [drainme_seed]
+    volumes:
+      # D54: state lives in ./data, outside git (it is ignored).
+      # First deploy: mkdir -p data/drainme && chown 65532:65532 it.
+      - ${DRAINME_HOST_DATA:-./data/drainme}:/data
+    tmpfs:
+      - /tmp:size=16m # SQLite's scratch space; the root filesystem is read-only
+    # No ports: publishing would bypass the tunnel from the LAN (stack-pitfalls P6). cloudflared reaches
+    # http://drainme-app:8080 over the internal network.
+    networks: [internal]
+    cpus: ${DRAINME_CPUS:-0.5}
+    # measured: 5,000 live viewers plus a 3,900 new-address/s click flood peak at 306 MB (D99)
+    mem_limit: ${DRAINME_MEMORY:-512m}
+    pids_limit: ${DRAINME_PIDS:-128}
+    depends_on:
+      egress:
+        condition: service_healthy
+    healthcheck:
+      # scratch has no shell or curl; the binary probes its own /healthz (D52)
+      test: ["CMD", "/drainme", "healthcheck"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+      start_interval: 2s # probe quickly while starting, so dependants are not held for a full interval
+
+  egress:
+    <<: *baseline
+    image: drainme:v0.1.0
+    container_name: drainme-egress
+    command: ["egress"]
+    user: "65532:65532"
+    environment:
+      <<: *endpoints
+    networks: [internal, outbound]
+    cpus: 0.25
+    mem_limit: 64m
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "/drainme", "healthcheck", "127.0.0.1:3128"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 2s
+
+  # D104: proof of work on this machine's CPU, the last entry in DRAINME_WORK_URLS (http://drainme-work:7076), so
+  # it works only when every free work server has failed. Internal network only: nothing can reach it from
+  # outside, and it reaches nothing. Lowest CPU weight, so whatever else runs on the host goes first.
+  work:
+    <<: *baseline
+    image: drainme:v0.1.0
+    container_name: drainme-work
+    command: ["work"]
+    user: "65532:65532"
+    environment:
+      DRAINME_WORK_THREADS: ${DRAINME_WORK_THREADS:-2}
+    networks: [internal]
+    cpus: ${DRAINME_WORK_CPUS:-2}
+    cpu_shares: 2
+    mem_limit: 32m
+    pids_limit: 32
+    healthcheck:
+      test: ["CMD", "/drainme", "healthcheck", "127.0.0.1:7076"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 2s
+
+  # D3, D56: a tunnel of drainme's own. In the Cloudflare dashboard its public hostname points at
+  # http://drainme-app:8080.
+  cloudflared:
+    <<: *baseline
+    image: cloudflare/cloudflared@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c # latest as of 2026-10-03, built 2026-09-24
+    container_name: drainme-cloudflared
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${DRAINME_TUNNEL_TOKEN:-}
+    networks: [internal, outbound]
+    cpus: 0.25
+    # one proxied connection per live viewer as well; sized by estimate, so watch docker stats at launch (D99)
+    mem_limit: ${DRAINME_TUNNEL_MEMORY:-384m}
+    pids_limit: 64
+    depends_on:
+      app:
+        condition: service_healthy
+
+networks:
+  internal:
+    name: drainme-internal
+    internal: true
+  outbound:
+    name: drainme-outbound
+
+secrets:
+  drainme_seed:
+    # Created offline (D69); readable by uid 65532 only.
+    file: ${DRAINME_SEED_HOST_FILE:-./secrets/drainme_seed}

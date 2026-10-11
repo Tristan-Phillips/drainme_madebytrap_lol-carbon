@@ -1,0 +1,10 @@
+[Unit]
+Description=drainme halt alerts over Telegram (D104)
+
+[Service]
+ExecStart=@DIR@/scripts/ops/drainme-alert.sh watch
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=default.target

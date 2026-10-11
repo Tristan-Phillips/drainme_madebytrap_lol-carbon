@@ -1,0 +1,20 @@
+# secrets: never committed (D26)
+.env
+secrets/
+*.seed
+
+# runtime data lives outside the repo (D54); these catch accidents
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# build output
+/drainme
+/bin/
+
+# post images: large binaries stay out of git
+docs/reddit/
+
+# the GitHub copy is its own repository, refreshed by scripts/github-sync.sh
+/public/

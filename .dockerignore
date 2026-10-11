@@ -1,0 +1,22 @@
+.git
+.gitignore
+.dockerignore
+.claude/
+docs/
+scripts/
+Readme.md
+
+data/
+secrets/
+
+# Secrets must never enter a build layer: COPY . . would put them in the build stage even though the final
+# scratch stage never references them.
+.env
+*.env
+*.seed
+*.db
+*.db-shm
+*.db-wal
+
+# the GitHub copy (scripts/github-sync.sh)
+public/

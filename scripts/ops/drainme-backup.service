@@ -1,0 +1,6 @@
+[Unit]
+Description=drainme ledger backup, keeping the newest 48 (D104)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker compose -f @DIR@/compose.yaml exec -T app /drainme backup --keep 48

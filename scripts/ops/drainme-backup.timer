@@ -1,0 +1,10 @@
+[Unit]
+Description=drainme hourly ledger backup (D104)
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

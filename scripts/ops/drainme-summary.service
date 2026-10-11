@@ -1,0 +1,6 @@
+[Unit]
+Description=drainme daily summary over Telegram (D104)
+
+[Service]
+Type=oneshot
+ExecStart=@DIR@/scripts/ops/drainme-alert.sh summary
